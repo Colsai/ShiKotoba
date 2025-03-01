@@ -1,8 +1,8 @@
 import openai
 import os
 import configparser
-import chromadb
-from chromadb.utils import embedding_functions
+#import chromadb
+#from chromadb.utils import embedding_functions
 import json
 
 # Set OpenAI API key from environment variable
@@ -13,17 +13,38 @@ config = configparser.ConfigParser()
 config.read("config.ini")
 
 # Extract OpenAI model parameters
-model = config["openai"].get("model", "gpt-4-turbo")
-max_tokens = config["openai"].getint("max_tokens", 1000)
-temperature = config["openai"].getfloat("temperature", 0.7)
+model = config["openai"].get("model")
+max_tokens = config["openai"].getint("max_tokens")
+temperature = config["openai"].getfloat("temperature")
 
 # Get resume folder path
-resume_folder = config["files"].get("resume_folder", "documents")
+resume_folder = config["files"].get("resume_folder")
 
 # Initialize ChromaDB
+'''
 chroma_client = chromadb.PersistentClient(path="./resume_db")  # Persistent storage
 embedding_function = embedding_functions.OpenAIEmbeddingFunction(api_key=os.getenv("OPENAI_API_KEY"))
 collection = chroma_client.get_or_create_collection(name="resumes", embedding_function=embedding_function)
+'''
+
+def read_text_file(filename):
+    """
+    Attempts to read a text file from the user's Documents folder.
+
+    :param filename: Name of the file to read (e.g., "example.txt").
+    :return: File content as a string or an error message.
+    """
+    # Get the path to the Documents folder
+    documents_path = os.path.expanduser("~/Documents")
+    file_path = os.path.join(documents_path, filename)
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            return file.read()  # Return the file contents
+    except FileNotFoundError:
+        return f"Error: File '{filename}' not found in Documents folder."
+    except Exception as e:
+        return f"An error occurred: {e}"
 
 #Load resumes into main 
 def load_resumes():
@@ -48,7 +69,11 @@ def find_best_resume(job_description):
 
 def generate_resume(job_description):
     """Creates a tailored resume based on a job description."""
-    best_resume = find_best_resume(job_description)
+    #best_resume = find_best_resume(job_description)
+    
+    # Example usage:
+    resume_content = read_text_file("documents/resume.txt")
+
     if not best_resume:
         return "No resumes found. Please add a resume to the 'documents' folder."
 
@@ -80,7 +105,7 @@ def generate_resume(job_description):
 if __name__ == "__main__":
     # Load resumes on startup
     load_resumes()
-
+    
     # Example Job Description
     job_description = """
     We are looking for a Data Analyst proficient in Python, SQL, and Power BI.
@@ -89,4 +114,5 @@ if __name__ == "__main__":
 
     # Generate a tailored resume
     updated_resume = generate_resume(job_description)
+
     print("\nGenerated Resume:\n", updated_resume)
